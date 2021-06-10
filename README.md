@@ -1,12 +1,11 @@
 # ETC_5510_Group_Assignment_2-3-4
 
-Team Members
-
-1.Arpan Sarkar
-2.Adarsh
-3.Khushi Thackker
-4.Ambalika Gupta
-5.Shuai Miao
+Team Members:
+1. Arpan Sarkar
+2. Adarsh
+3. Khushi Thackker
+4. Ambalika Gupta
+5. Shuai Miao
 
 One of the biggest problems of interest at hand for humanity in this day and age is perhaps global warming. We as a group were intrigued to research the contributing factors to the biggest aid to global warming i.e. CO2 emissions.
 
