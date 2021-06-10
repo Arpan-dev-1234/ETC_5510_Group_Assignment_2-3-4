@@ -1,0 +1,804 @@
+---
+title: "Carbon Footprint"
+output: 
+  flexdashboard::flex_dashboard:
+    
+    source_code: embed
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+```{r include=FALSE}
+library(here)
+library(tidyverse)
+library(naniar)
+library(countrycode)
+library(plotly)
+library(janitor)
+library(flexdashboard)
+library(readr)
+library(dslabs)
+library(ggplot2)
+library(dplyr)
+library(gapminder)
+library(tidytext)
+library(kableExtra)
+library(tidytuesdayR)
+library(rnaturalearthdata)
+library(gganimate)
+library(viridis)
+library(sf)
+library(RColorBrewer)
+library(rgeos)
+library(gifski)
+library(ggpubr)
+library(rnaturalearth)
+library(gsubfn)
+
+```
+
+```{r readco2, include=FALSE}
+Carbon1<-read_csv("data/CO2.csv",skip = 4, col_names = T)
+
+Carbon1 <- pivot_longer(Carbon1, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "co2_emissions_metric_tons_per_capita") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "co2_emissions_metric_tons_per_capita","Year" ) %>% rename("Country" = "Country Name", "Co2" = "co2_emissions_metric_tons_per_capita")
+```
+
+
+```{r readtemp, include=FALSE}
+
+year_range <- c(1990:2015)
+
+data <- (read.csv(file = "DATA/temp.csv") )
+
+
+temp_data <- data %>% 
+  clean_names() %>% 
+  select(temperature_celsius,year,country,iso3) %>%
+  rename(country_code = iso3,temperature = temperature_celsius) %>%
+  mutate(temperature = as.double(temperature),year = as.integer(year)) %>% 
+  group_by(year,country,country_code) %>%
+  summarise(mean_temp = mean(temperature)) %>% 
+  mutate(country = gsub(" ", "",country, fixed = TRUE))
+
+Temperature <- temp_data %>% filter(year %in% year_range)
+```
+
+```{r include=FALSE}
+join_temperature <- full_join(x = Carbon1 , y = Temperature , by = c("Country" = "country", "Year" = "year")) %>%  filter(Year %in% year_range)
+```
+
+```{r include=FALSE}
+miss_var_summary(join_temperature)
+
+temp_Co2 <- na.omit(join_temperature)
+```
+
+
+```{r include=FALSE}
+temp_Co2$continent <- countrycode(sourcevar = temp_Co2$Country,
+                            origin = "country.name",
+                            destination = "continent")
+```
+
+
+```{r readingdata, include=FALSE}
+climate <- read.csv("Data/climate.csv")
+
+```
+
+```{r continent join, include=FALSE}
+
+climate$continent <- countrycode(sourcevar = climate$country_name,
+                            origin = "country.name",
+                            destination = "continent")
+
+```
+
+
+```{r include=FALSE}
+climate1 <- climate %>% 
+  select(value, year, country_code, co2_emissions_metric_tons_per_capita, country_name ) %>% 
+  na.omit(value)
+  
+    
+climate1$continent <- countrycode(sourcevar = climate1$country_code,
+                            origin = "cowc",
+                            destination = "continent")
+
+
+climate3 <- climate1 %>% 
+  group_by(year, continent) %>% 
+  summarise(meanv = mean(value)) %>% 
+  na.omit(continent)
+
+climate4 <- climate1 %>% 
+  group_by(year, continent) %>% 
+  summarise(co2 = mean(co2_emissions_metric_tons_per_capita)) %>% 
+  na.omit(continent)
+ 
+
+
+```
+
+
+```{r data_load, include=F}
+
+
+#Original file name: API_EN.ATM.CO2E.PC_DS2_en_csv_v2_2257607
+#Modified file name: CO2
+
+Carbon11<-read_csv("data/CO2.csv",skip = 4, col_names = T)
+
+#Original file name: API_EG.FEC.RNEW.ZS_DS2_en_csv_v2_2253022
+#Modified file name: Renewable_Energy
+
+Renewable1<- read_csv("data/Renewable_Energy.csv",skip = 4, col_names = T)
+
+#Original file name: API_AG.LND.FRST.ZS_DS2_en_csv_v2_2252316
+#Modified file name: Forest_Area
+
+Forest1<- read_csv("data/Forest_Area.csv",skip = 4, col_names = T)
+
+#Original file name: API_SP.URB.TOTL_DS2_en_csv_v2_2254024
+#Modified file name: Urban_Population
+
+Urban_pop<- read_csv("data/Urban_Population.csv",skip = 4, col_names = T)
+
+#Original file name: API_NY.GDP.MKTP.KD.ZG_DS2_en_csv_v2_2252300
+#Modified file name: GDP_data
+
+GDP_data<- read_csv("data/GDP_data.csv", skip = 4, col_names = T)
+
+
+#Summary of NA Values
+
+miss_var_summary(Carbon11)
+
+miss_var_summary(Renewable1)
+
+miss_var_summary(Forest1)
+
+miss_var_summary(Urban_pop)
+
+
+
+```
+
+
+
+```{r Data_Clean, include=F}
+
+#Removed columns which has more than 30% Na values.
+
+Carbon11<- Carbon11[, which(colMeans(!is.na(Carbon11))>0.7)]
+Renewable1<- Renewable1[, which(colMeans(!is.na(Renewable1))> 0.7)]
+Forest1<- Forest1[, which(colMeans(!is.na(Forest1))> 0.7)]
+Urban_pop<- Urban_pop[, which(colMeans(!is.na(Urban_pop))> 0.7)]
+GDP_data<- GDP_data[, which(colMeans(!is.na(GDP_data))> 0.7)]
+
+
+```
+
+
+```{r data_wrangal1, include=F}
+#Pivoted CO2 emissions data to longer format
+
+Carbon11 <- pivot_longer(Carbon11, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "co2_emissions_metric_tons_per_capita") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "co2_emissions_metric_tons_per_capita","Year" )
+```
+
+
+```{r data_wrangal2, include=F}
+#Pivoted Renweable_Energy data to longer format
+
+Renewable1<- pivot_longer(Renewable1, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "pcnt_renewable_energy_consumed") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "pcnt_renewable_energy_consumed","Year" )
+
+```
+
+
+```{r data_wrangal3, include=F}
+#Pivoted Forest_Area data to longer format
+
+Forest1<- pivot_longer(Forest1, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "pcnt_forest_area") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "pcnt_forest_area","Year" )
+
+```
+
+```{r data_wrangal4, include=F}
+#Pivoted Urban_poppulation data to longer format
+Urban_pop<- pivot_longer(Urban_pop, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "Urban_Population") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "Urban_Population","Year" )
+```
+
+
+```{r data_wrangal5, include=F}
+#Pivoted GDP_data  data to longer format
+GDP_data<- pivot_longer(GDP_data, cols = c( "1990":"2015"),
+             names_to = "Year",
+             values_to = "GDP_pcnt") %>%
+  mutate(Year = as.integer(Year))%>%
+  select("Country Name", "Country Code", "GDP_pcnt","Year" )
+```
+
+
+
+```{r join_table, include=F}
+
+#Joined CO2 data with Renewable data
+
+join_table1<- full_join(Carbon11,Renewable1)
+
+#Joined join_table1 data with Forest_Area data
+
+join_table2<- full_join(join_table1, Forest1)
+
+#Joined join_table2 data with Urban_Population data
+
+join_table3<- full_join(join_table2, Urban_pop)
+
+#Joined join_table3 data with GDP_data 
+
+join_table4<- full_join(join_table3, GDP_data )
+
+
+
+
+```
+
+
+
+```{r include=F}
+join_table5<- clean_names(join_table4)
+
+library(countrycode)
+join_table5$continent <- countrycode(sourcevar = join_table5$country_code,
+                            origin = "cowc",
+                            destination = "continent")
+
+df6<- join_table5
+df6$continent[is.na(df6$continent)]<- "Rest_of_the_world"
+```
+
+```{r}
+climate_co2 <- Carbon1 %>%
+  na.omit(Co2) %>% 
+  group_by(Year) %>% 
+  summarise(meanco2 = mean(Co2))
+  
+
+```
+
+
+
+Part A {data-navmenu="Introduction"}
+===================================== 
+
+Column {data-width=750}
+--------------------------------------
+### Introduction 
+
++ One of the biggest problems of interest at hand for humanity in this day and age is perhaps global warming. We as a group were intrigued to research the contributing factors to the biggest aid to global warming i.e. CO2 emissions. 
+
++ Some of these contributing factors include Greenhouse gases, Crude oil production, ,Climate change, Renewable energy consumption, Forest area and Temperature growth. We were able to find data recorded over the span of several decades on these factors from sources like https://data.worldbank.org, https://data.oecd.org and https://www.climatewatchdata.org. 
+
++ However we believe that our analysis has been done for two decades (1990 - 2010) for all the major contributing factors causing CO2 emissions, we do believe that there might be limitations to our analysis like limited time frame of data availability. 
+
++ There might also be other factors to be considered like Population rise, Increase in the usage of vehicles etc. Absence of this data in our analysis also poses a limitation as well.
+
+
+### CO2 Emission Trend from the Year 1990-2015 {data-height=450}
+```{r fig.width=12}
+Co2trend <- climate_co2 %>%
+ggplot(aes(x = Year,
+           y = meanco2))+
+  geom_line()
+
+co2gggg <- ggplotly(Co2trend)
+
+co2gggg
+  
+```
+
+
+Column .sideBar {width: 55px}
+--------------------------------------
+
+```{r img1, echo = F, fig.width = 5, fig.height= 5}
+knitr::include_graphics("carbon.jpg")
+```
+
+
+Part B {data-navmenu="Introduction"}
+===================================== 
+
+Column {data-width=550}
+--------------------------------------
+
+### Global change in GHG emissions 
+```{r echo=FALSE, fig.width=12}
+
+country_summary <- climate %>%
+  filter(gas == "All GHG") %>% 
+  group_by(year, country_code, country_name, population) %>% 
+  summarise(GHG_emissions_sum = sum(ghg_emissions)) %>%
+  na.omit(GHG_emissions_sum)
+
+countries <- ne_countries(returnclass = "sf", scale = "medium")
+Jointable <- ne_countries(returnclass = "sf", scale = "medium") %>% 
+  select(iso_a3) %>% 
+  right_join(country_summary, by = c("iso_a3" = "country_code"))
+
+emp_map  <- ggplot()+
+  geom_sf(data = countries, fill = NA)+
+  geom_sf(data = Jointable ,
+          mapping = aes(fill = GHG_emissions_sum))+
+  scale_fill_viridis(na.value="white")+
+  labs(title = "Global change in GHG emissions from year 1990-2010",
+       subtitle = "Year: {current_frame}",
+       fill = "GHG Emissions")+
+  transition_manual(year) 
+
+final_map <- animate(emp_map, duration = 10, fps = 5, width = 1000, height = 500, renderer = gifski_renderer())
+
+final_map
+
+```
+
+
+Column {data-width=400}
+--------------------------------------
+
+### Research Questions about dataset:
+**Climate change** is any long-term alteration in average weather patterns, either globally or regionally. One of the most important factors and reasons for climate change is carbon dioxide emissions. Co2 is rapidly increasing over the last few years.
+
+1. *What is the CO2 emission trend over the years?*
+
+2. *What are the causes of the rise in CO2 emissions?*
+
+3. *What is the global effect of CO2 emissions over the years?*
+
+4. *What are the steps taken to curb CO2 emissions?*
+
+5. *Global counterparts with maximum and minimum contribution in Sustainable Development.*
+
+
+
+### Data Used
+1. **Co2 Emissions**: Data for carbon dioxide emissions globally from the period 1960-2016
+
+2. **GHG Emissions**: Global GHG emission dataset for six-gases for multiple sectors of economy for 197 countries.
+
+3. **Oil Production**:Data recording the production of crude oil in all countries over the past six decades.
+
+4. **Renewable Energy Consumption**: Renewable energy consumption data for various countries.
+
+5. **Forest Area**: Data on forest cover for all countries.
+
+Global Temperature: Temperature is recorded in degree celsius for all countries from 1990 to 2020
+
+
+Part A {data-navmenu="Causes"}
+===================================== 
+
+Column {data-width=400}
+--------------------------------------------
+### Sectorwise distribution of GHG emissions 
+
+It is observed that Energy sector is the maximum contributor to GHG emissions 
+
+```{r echo=FALSE, fig.width=12}
+
+h <- continent_sector <- climate %>% 
+  group_by(year, sector, continent) %>% 
+  summarise(ghg_emissions1 = mean(ghg_emissions)) %>% 
+  na.omit()
+
+
+g <- ggplot(continent_sector, aes(x = continent_sector$year, y = continent_sector$ghg_emissions1, fill = sector)) +
+  geom_col() + labs(y="GHG Emissions", x = "Year") +
+  facet_wrap(~continent_sector$continent, ncol = 5) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+fig <- ggplotly(g)
+
+fig
+
+```
+
+
+
+
+
+Part B {data-navmenu="Causes"}
+===================================== 
+
+Column {data-width=550}
+--------------------------------------------
+
+### Oil Production
+```{r}
+
+oil <- ggplot(climate3) +
+  geom_line(data = climate3, 
+             aes(x = year,
+                 y = meanv, colour = continent)) 
+
+oilgg <- ggplotly(oil)
+
+oilgg
+  
+```
+ 
+Column {data-width=550}
+--------------------------------------------
+ 
+### CO2 Emission
+```{r}
+
+co2gg <- ggplot(climate4) +
+  geom_line(data = climate4, 
+             aes(x = year, 
+                 y = co2, colour = continent)) 
+
+co2gg1 <- ggplotly(co2gg)
+
+co2gg1
+
+
+```
+
+
+Temperature Vs Co2 {data-navmenu="Effects"}
+=====================================
+
+Column {data-width=400}
+--------------------------------------------
+
+```{r include=FALSE}
+total_ghg <- read_csv("Data/total-ghg-emissions.csv")
+
+total_ghg <- total_ghg %>% 
+  rename(Country = "Entity", GHG_Emission = `Total GHG emissions including LUCF (CAIT)`)
+```
+
+
+### Increase of global temperture with the rise in Co2
+
+```{r include=FALSE}
+t <- ggplot(temp_Co2, aes(Co2, mean_temp , color = continent)) +
+  geom_point(aes(frame = Year, ids = Country)) +
+  facet_wrap(~continent, ncol = 5 ) +
+  labs ( x = "Co2 emissions (metric tons)" , y = "Temperature")
+  
+fig1 <- ggplotly(t)
+
+```
+
+```{r fig.width=4}
+fig1
+```
+
+Temperature Rise  {data-navmenu="Effects"}
+=====================================
+
+### Temperature Rise 
+
+```{r include=FALSE}
+table_temp <- temp_Co2 %>% group_by(Year) %>% summarise(Temp = mean(mean_temp),Co2 = mean(Co2)) %>% arrange(Year)
+```
+
+```{r include=FALSE}
+table_temp1 <- temp_data %>% 
+  filter(year <= "2016") %>% 
+  group_by(year) %>% 
+  summarise(Temp = mean(mean_temp)) %>%
+  arrange(year)
+
+#The world is getting warmer. The average global temperature on Earth has increased roughly 0.15 to 0.20°C per decade.
+
+```
+
+
+```{r include=FALSE , fig.width=2}
+l <- ggplot(data= table_temp1, aes(x=year, y = Temp)) +
+ geom_line()+
+  geom_point()+
+  geom_point(color = "red")+
+  labs (x = "YEARS" , y = "TEMPERATURE") 
+    
+```
+
+
+```{r include=FALSE}
+temp_plot <- ggplotly(l)
+```
+
+
+```{r ghg , include = F}
+library(scales)
+ghg_table <- total_ghg %>% group_by(Year) %>% summarise(GHG = mean(GHG_Emission)) %>% arrange(Year)
+
+ghg_line <- ggplot(data= ghg_table, aes(x=Year, y = GHG)) +
+ geom_line()+
+  geom_point(color = "red")+
+  labs (x = "Years" , y = "GHG")+ 
+  scale_y_continuous(labels = label_number(suffix = " M", scale = 1e-6))
+
+```
+
+```{r include=FALSE}
+ghg_plot <- ggplotly(ghg_line) 
+```
+
+```{r}
+subplot(temp_plot, ghg_plot, titleX = T, titleY = T)
+```
+
+
+
+Deforestation {data-navmenu="Effects"}
+==================================
+
+Column {data-width=500} 
+-----------------------------------------------------------
+
+### Effect of Deforestation
+
+```{r }
+ggforest <- ggplot(df6, aes(pcnt_forest_area, co2_emissions_metric_tons_per_capita, text=country_name)) +
+  geom_point(aes(size = urban_population, frame = year, text=country_name )) +
+  scale_x_log10()+labs(x="FOREST_AREA%", y="CO2")+facet_wrap(~ continent, scales = 'free')+
+  geom_smooth(method = "lm", se=F)
+ggplotly(ggforest)
+```
+
+
+
+
+Part A {data-navmenu="Measures"}
+===================================== 
+
+### Effect of renewable energy on CO2 emissions
+
+```{r }
+gg <- ggplot(df6, aes(pcnt_renewable_energy_consumed, co2_emissions_metric_tons_per_capita, color = continent, text=country_name)) +
+  geom_point(aes(size = urban_population, frame = year, text=country_name )) +
+  scale_x_log10()+labs(x="GREEN_ENERGY%", y="CO2")+ facet_wrap(~ continent, scales = 'free')
+ggplotly(gg)
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+**Key Informations**
+
+ * Clean energy has far more to recommend it than just being "green." The growing sector creates jobs, makes electric grids more resilient, expands energy access in developing countries, and helps lower energy bills. 
+ 
+ * In any discussion about climate change, **renewable energy** usually tops the list of changes the world can implement to stave off the worst effects of rising temperatures.
+ 
+ * **Bhutan** is a small country situated between India and China, which are major producers of carbon dioxide and yet, it has managed to achieve complete carbon neutrality in the past years.
+
+
+
+
+Part B {data-navmenu="Measures"}
+===================================== 
+
+### Comparing CO2 emissions with renewable energy and forest area
+
+```{r echo=FALSE}
+
+df7<-df6%>%group_by(year)%>%summarise(pcnt_renewable_energy_consumed=mean(pcnt_renewable_energy_consumed,na.rm=T),CO2=mean(co2_emissions_metric_tons_per_capita,na.rm=T), forest_Area=mean(pcnt_forest_area,na.rm=T))
+
+
+gg1<-ggplot(df7, aes(x =year , y =pcnt_renewable_energy_consumed)) + 
+  geom_line(color="yellow")+
+  geom_point(color="red")+
+  labs(y="GREEN_ENERGY%")
+gg2<-ggplot(df7, aes(x =year , y =CO2)) + 
+  geom_line(color="red")+
+  geom_point(color="black")
+gg3<-ggplot(df7, aes(x =year , y =forest_Area)) + 
+  geom_line(color="green")+
+  geom_point(color="orange")+
+  labs(y="FOREST_AREA%")
+gg4<-ggplotly(gg2)
+gg5<-ggplotly(gg1)
+gg6<-ggplotly(gg3)
+
+
+figure1<- subplot(gg4,gg5,gg6,nrows = 3, titleX = F, titleY = T)
+
+figure1
+```
+
+
+
+Part C {data-navmenu="Measures"}
+=====================================
+Column 
+-------------------------------------
+
+### Lowest GHG Producing Countries
+
+```{r echo=FALSE, fig.width=15, fig.height=10}
+
+countries_sorted <- climate %>% 
+  filter(year %in% c(2005:2010), gas == "All GHG") %>%
+  group_by(country_name, year) %>% 
+  summarise(ghg_emissions1 = sum(ghg_emissions)) %>% 
+  arrange(desc(ghg_emissions1)) %>%
+  na.omit(country_name)
+
+ggg <- countries_sorted %>% 
+  group_by(year) %>% 
+  top_n(-10) %>% 
+  ungroup() %>% 
+  mutate(year=as.factor(year)) %>% 
+  ggplot(aes(x=ghg_emissions1 , y =country_name , fill = year)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~year, scales="free_y", ncol = 3)+
+  coord_flip() +
+  labs(title = "GHG emissions for each country from 2006-2010",
+           y = "Country",
+           x = "Year")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  
+
+ggg
+
+
+```
+
+
+Column 
+-------------------------------------
+
+### Bhutan
+BHUTAN IS THE ONLY CARBON-NEGATIVE COUNTRY IN THE WORLD. Large amount of tree cover acts as a carbon sink. Hydroelectric power used instead of fossil fuels. Free electricity is provided to rural farmers.
+
+```{r echo=FALSE}
+
+bhutan <- climate %>% 
+  filter(country_name == "Bhutan", year %in% ('1990':'2010')) %>% 
+  group_by(year) %>% 
+  summarise(GHG_emissions = sum(ghg_emissions)) %>% 
+  kableExtra::kable(caption = "Bhutan : Only Carbon Negative Country") %>% 
+  kable_classic(full_width = F, html_font = "Cambria")
+
+bhutan
+
+
+```
+
+
+
+
+Conclusion 
+=====================================
+
+Column 
+-----------------
+
++ Carbon dioxide emissions are the primary driver of global climate change
+
++ Co2 has drastically increased in the past two decades
+
++ One of the major cause of rise in Co2 levels are oil production 
+
++ Green house gases are rising in all over the world leading to global warming.  Asian countries are highest green house producers.
+
++ The loss of forest areas is also contributing to more emission of CO2
+
++ Co2 is rising day by day which is one of the causes of rise in global land temperatures
+
++ Bhutan Is the World's Only Carbon-Negative Country
+
+*It is time that all the nations, big or small, rich or poor must take immediate action in increasing use of green energy and reduction of conventional energy.*
+
+Column 
+-----------------
+
+```{r  echo = F, fig.width = 5, fig.height= 5}
+knitr::include_graphics("earth.jpg")
+```
+
+Reference
+=====================================
+
+
+**Data Source**
+
+[1] CO2 Emissions(https://data.worldbank.org/indicator/EN.ATM.CO2E.PC) 
+
+[2] Crude Oil Production(https://data.oecd.org/energy/crude-oil-production.htm#indicator-chart)
+
+[3] Greenhouse Gas Emission(https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)
+
+[4] Climate Change-World Bank(https://databank.worldbank.org/data/download/catalog/climate_change_download_0.xls)
+
+[5] Urban Population (https://data.worldbank.org/indicator/SP.URB.TOTL)
+
+[6] Forest Area (https://data.worldbank.org/indicator/AG.LND.FRST.ZS)
+
+[7]GDP Growth (https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG)
+
+[8] Temperature Data (https://climateknowledgeportal.worldbank.org/download-data)
+
+
+
+
+**References**
+
+
+[1] Kirill Müller (2020). here: A Simpler Way to Find Your Files. R package version 1.0.1.
+  https://CRAN.R-project.org/package=here
+
+[2] Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),
+  1686, https://doi.org/10.21105/joss.01686
+  
+[3] Nicholas Tierney, Di Cook, Miles McBain and Colin Fay (2020). naniar: Data Structures,
+  Summaries, and Visualisations for Missing Data. R package version 0.6.0.
+  https://CRAN.R-project.org/package=naniar
+
+
+[4] Arel-Bundock et al., (2018). countrycode: An R package to convert country names and country
+  codes. Journal of Open Source Software, 3(28), 848, https://doi.org/10.21105/joss.00848
+
+[5]  C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and
+  Hall/CRC Florida, 2020.
+
+
+[6] Richard Iannone, JJ Allaire and Barbara Borges (2020). flexdashboard: R Markdown Format for
+  Flexible Dashboards. R package version 0.5.2.
+  https://CRAN.R-project.org/package=flexdashboard
+
+[7]  Hao Zhu (2021). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package
+  version 1.3.4. https://CRAN.R-project.org/package=kableExtra
+
+[8] Ellis Hughes (2020). tidytuesdayR: Access the Weekly 'TidyTuesday' Project Dataset. R
+  package version 1.0.1. https://CRAN.R-project.org/package=tidytuesdayR
+  
+[9] Andy South (2017). rnaturalearth: World Map Data from Natural Earth. R package version
+  0.1.0. https://CRAN.R-project.org/package=rnaturalearth
+
+[10]  Simon Garnier (2018). viridis: Default Color Maps from 'matplotlib'. R package version
+  0.5.1. https://CRAN.R-project.org/package=viridis
+  
+[11]  Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The
+  R Journal 10 (1), 439-446, https://doi.org/10.32614/RJ-2018-009
+  
+[12] Erich Neuwirth (2014). RColorBrewer: ColorBrewer Palettes. R package version 1.1-2.
+  https://CRAN.R-project.org/package=RColorBrewer
+  
+[13]Roger Bivand and Colin Rundel (2020). rgeos: Interface to Geometry Engine - Open Source
+  ('GEOS'). R package version 0.5-5. https://CRAN.R-project.org/package=rgeos
+  
+[14]Jeroen Ooms (2021). gifski: Highest Quality GIF Encoder. R package version 1.4.3-1.
+  https://CRAN.R-project.org/package=gifski
+  
+[15]Sam Firke (2021). janitor: Simple Tools for Examining and Cleaning Dirty Data. R package
+  version 2.1.0. https://CRAN.R-project.org/package=janitor  
+
+[16] https://www.nationalgeographic.com/environment/article/renewable-energy
+
+
