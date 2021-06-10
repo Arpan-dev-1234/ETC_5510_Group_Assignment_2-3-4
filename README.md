@@ -7,10 +7,19 @@ Team Members:
 4. Ambalika Gupta
 5. Shuai Miao
 
-One of the biggest problems of interest at hand for humanity in this day and age is perhaps global warming. We as a group were intrigued to research the contributing factors to the biggest aid to global warming i.e. CO2 emissions.
+# Problem Context:
 
-Some of these contributing factors include Greenhouse gases, Crude oil production, ,Climate change, Renewable energy consumption, Forest area and Temperature growth. We were able to find data recorded over the span of several decades on these factors from sources like https://data.worldbank.org, https://data.oecd.org and https://www.climatewatchdata.org.
+1. One of the biggest problems of interest at hand for humanity in this day and age is perhaps global warming. We as a group were intrigued to research the contributing factors to the biggest aid to global warming i.e. CO2 emissions.
 
-However we believe that our analysis has been done for two decades (1990 - 2010) for all the major contributing factors causing CO2 emissions, we do believe that there might be limitations to our analysis like limited time frame of data availability.
+2. Some of these contributing factors include Greenhouse gases, Crude oil production, ,Climate change, Renewable energy consumption, Forest area and Temperature growth. We were able to find data recorded over the span of several decades on these factors from sources like https://data.worldbank.org, https://data.oecd.org and https://www.climatewatchdata.org.
 
-There might also be other factors to be considered like Population rise, Increase in the usage of vehicles etc. Absence of this data in our analysis also poses a limitation as well.
+3. However we believe that our analysis has been done for two decades (1990 - 2010) for all the major contributing factors causing CO2 emissions, we do believe that there might be limitations to our analysis like limited time frame of data availability.
+
+4. There might also be other factors to be considered like Population rise, Increase in the usage of vehicles etc. Absence of this data in our analysis also poses a limitation as well.
+
+
+# Tools Used:
+1. R
+2. R studio
+3. Flex Dashboards
+
